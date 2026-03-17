@@ -116,29 +116,58 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
   reserveRightColumn = true,
   followMainHead = true,
 }) => {
+  const MIN_ZOOM = 0.70;
+  const MAX_ZOOM = 2;
+  const ZOOM_STEP = 0.1;
+
   const gitConfig = configProp ?? defaultGitConfig;
   const counterRotation = -(gitConfig.GRAPH_ROTATION || 0);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [isPanning, setIsPanning] = useState( false );
+  const [hasUserDragged, setHasUserDragged] = useState( false );
+  const [panOffset, setPanOffset] = useState( { x: 0, y: 0 } );
+  const [zoom, setZoom] = useState( 0.9 );
+  const zoomRef = useRef( 0.9 );
+  const panOffsetRef = useRef( { x: 0, y: 0 } );
+  const hasUserDraggedRef = useRef( false );
+  const panStartRef = useRef<{ x: number; y: number } | null>( null );
+  const pointerStartRef = useRef<{ x: number; y: number } | null>( null );
+  const panFrameRef = useRef<number | null>( null );
 
-  // useEffect( () =>
-  // {
-  //   if ( !canvasRef.current ) return;
+  useEffect( () =>
+  {
+    if ( !canvasRef.current ) return;
 
-  //   const observer = new ResizeObserver( ( entries ) =>
-  //   {
-  //     const entry = entries[0];
-  //     if ( entry ) {
-  //       setContainerWidth( entry.contentRect.width );
-  //       setContainerHeight( entry.contentRect.height );
-  //     }
-  //   } );
+    const observer = new ResizeObserver( ( entries ) =>
+    {
+      const entry = entries[0];
+      if ( entry ) {
+        setContainerWidth( entry.contentRect.width );
+        setContainerHeight( entry.contentRect.height );
+      }
+    } );
 
-  //   observer.observe( canvasRef.current );
+    observer.observe( canvasRef.current );
 
-  //   return () => observer.disconnect();
-  // }, [] );
+    return () => observer.disconnect();
+  }, [] );
+
+  useEffect( () =>
+  {
+    return () =>
+    {
+      if ( panFrameRef.current !== null ) {
+        cancelAnimationFrame( panFrameRef.current );
+      }
+    };
+  }, [] );
+
+  useEffect( () =>
+  {
+    zoomRef.current = zoom;
+  }, [zoom] );
 
   const { nodes, edges } = useMemo(() => {
     return buildCommitGraph(gitState, gitConfig.FIRST_BRANCH_DIRECTION);
@@ -170,7 +199,14 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
 
   const columnMetrics = useMemo(() => {
     if (nodes.length === 0) {
-      return { minX: -1, maxX: 1, columns: 3, extraRightColumns: 0 };
+      return {
+        minX: -1,
+        maxX: 1,
+        columns: 3,
+        layoutMinX: -2,
+        layoutMaxX: 2,
+        layoutColumns: 5,
+      };
     }
 
     let minX = Math.min(...nodes.map((n) => n.x));
@@ -187,92 +223,104 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
       columns = maxX - minX + 1;
     }
 
-    const extraRightColumns =
-      reserveRightColumn && minX < 0 && columns % 2 === 0 ? 1 : 0;
+    // Add one invisible column on both sides for smoother branch expansion.
+    const layoutMinX = minX - 1;
+    let layoutMaxX = maxX + 1;
+    let layoutColumns = layoutMaxX - layoutMinX + 1;
 
-    return { minX, maxX, columns, extraRightColumns };
+    // Keep total layout columns odd to preserve stable centering.
+    if ( layoutColumns % 2 === 0 ) {
+      layoutMaxX += 1;
+      layoutColumns += 1;
+    }
+
+    return {
+      minX,
+      maxX,
+      columns,
+      layoutMinX,
+      layoutMaxX,
+      layoutColumns,
+    };
   }, [nodes, reserveRightColumn]);
 
-  const maxX = useMemo(() => {
-    if (nodes.length === 0) return gitConfig.NODE_SPACING_X * 3;
-    const rangeX =
-      columnMetrics.maxX - columnMetrics.minX + columnMetrics.extraRightColumns;
-    return (
-      (rangeX + 2) * gitConfig.NODE_SPACING_X +
-      gitConfig.COMMIT_RADIUS * 2 +
-      gitConfig.OFFSET_LEFT * 2
-    );
-  }, [
-    nodes.length,
-    columnMetrics,
-    gitConfig.NODE_SPACING_X,
-    gitConfig.COMMIT_RADIUS,
-    gitConfig.OFFSET_LEFT,
-  ]);
+  const activeBranchCount = useMemo( () =>
+  {
+    const uniqueBranches = new Set<string>();
+
+    // Add all branches from nodes that are still in gitState (not merged/deleted)
+    for ( const node of nodes ) {
+      if ( node.commit.branch && gitState.branches.has( node.commit.branch ) ) {
+        uniqueBranches.add( node.commit.branch );
+      }
+    }
+
+    // Always ensure main is counted if any commits exist
+    if ( nodes.length > 0 ) {
+      uniqueBranches.add( gitConfig.MAIN_BRANCH_NAME );
+    }
+
+    return Math.max( uniqueBranches.size, 1 );
+  }, [nodes, gitState.branches, gitConfig.MAIN_BRANCH_NAME] );
+
+  const computedAutoZoom = useMemo( () =>
+  {
+    if ( activeBranchCount <= 3 ) return 1.0;
+    const zoomOut = ( activeBranchCount - 3 ) * 0.25;
+    return Math.max( MIN_ZOOM, 1.0 - zoomOut );
+  }, [activeBranchCount] );
+
+  useEffect( () =>
+  {
+    setZoom( computedAutoZoom );
+    zoomRef.current = computedAutoZoom;
+  }, [computedAutoZoom] );
 
   // Calculate center offset for negative x values
   const centerOffsetX = useMemo(() => {
-    if (nodes.length === 0) return 0;
-    return Math.abs(columnMetrics.minX);
-  }, [nodes.length, columnMetrics.minX]);
+    return -columnMetrics.layoutMinX;
+  }, [columnMetrics.layoutMinX] );
 
   // Calculate graph content width
-  const graphContentWidth = useMemo(() => {
-    if (nodes.length === 0) return 0;
-    const rangeX = columnMetrics.maxX - columnMetrics.minX;
+  const graphContentWidth = useMemo( () =>
+  {
     return (
-      (rangeX + 1) * gitConfig.NODE_SPACING_X + gitConfig.COMMIT_RADIUS * 2
+      ( columnMetrics.layoutColumns - 1 ) * gitConfig.NODE_SPACING_X +
+      gitConfig.COMMIT_RADIUS * 2
     );
   }, [
-    nodes.length,
     columnMetrics,
     gitConfig.NODE_SPACING_X,
     gitConfig.COMMIT_RADIUS,
   ]);
 
-  const extraRightPadding = useMemo(() => {
-    return columnMetrics.extraRightColumns * gitConfig.NODE_SPACING_X;
-  }, [columnMetrics.extraRightColumns, gitConfig.NODE_SPACING_X]);
+  const maxX = useMemo( () =>
+  {
+    const isVerticalGraph = Math.abs( counterRotation ) % 180 === 0;
 
-  const rightColumnAnchor = useMemo(() => {
-    if (nodes.length === 0 || columnMetrics.extraRightColumns === 0)
-      return null;
-    const maxY = Math.max(...nodes.map((n) => n.y));
-    return { x: columnMetrics.maxX + 1, y: maxY };
-  }, [nodes, columnMetrics.extraRightColumns, columnMetrics.maxX]);
-
-  const leftColumnAnchor = useMemo(() => {
-    if (nodes.length === 0) return { x: columnMetrics.minX - 1, y: 0 };
-    const maxY = Math.max(...nodes.map((n) => n.y));
-    return { x: columnMetrics.minX - 1, y: maxY };
-  }, [nodes, columnMetrics.minX]);
-
-  // Calculate horizontal offset to position the graph
-  const horizontalOffset = useMemo(() => {
-    if (
-      gitConfig.GRAPH_CENTER_MODE === "fixed" ||
-      gitConfig.GRAPH_LEFT_OFFSET >= 0
-    ) {
-      return gitConfig.GRAPH_LEFT_OFFSET;
+    if ( isVerticalGraph && containerWidth > 0 ) {
+      return containerWidth;
     }
 
-    const availableWidth =
-      containerWidth > 0 ? Math.max(containerWidth, maxX) : maxX;
-    const contentWidth = graphContentWidth;
-    const centeredOffset = (availableWidth - contentWidth) / 2;
-    const rightColumnOffset =
-      columnMetrics.extraRightColumns > 0 ? extraRightPadding / 2 : 0;
-    return Math.max(gitConfig.OFFSET_LEFT, centeredOffset - rightColumnOffset);
+    return graphContentWidth + gitConfig.OFFSET_LEFT * 2;
   }, [
-    containerWidth,
-    maxX,
     graphContentWidth,
-    gitConfig.GRAPH_CENTER_MODE,
-    gitConfig.GRAPH_LEFT_OFFSET,
+    containerWidth,
+    counterRotation,
     gitConfig.OFFSET_LEFT,
-    columnMetrics.extraRightColumns,
-    extraRightPadding,
-  ]);
+  ] );
+
+  const rightColumnAnchor = useMemo(() => {
+    if ( nodes.length === 0 ) return null;
+    const maxY = Math.max(...nodes.map((n) => n.y));
+    return { x: columnMetrics.layoutMaxX, y: maxY };
+  }, [nodes, columnMetrics.layoutMaxX] );
+
+  const leftColumnAnchor = useMemo(() => {
+    if ( nodes.length === 0 ) return { x: columnMetrics.layoutMinX, y: 0 };
+    const maxY = Math.max(...nodes.map((n) => n.y));
+    return { x: columnMetrics.layoutMinX, y: maxY };
+  }, [nodes, columnMetrics.layoutMinX] );
 
   const verticalOffset = useMemo(() => {
     const availableHeight = maxY;
@@ -288,7 +336,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
 
   // Transform node positions to SVG coordinates
   const getNodeX = (x: number) =>
-    (x + centerOffsetX) * gitConfig.NODE_SPACING_X + gitConfig.COMMIT_RADIUS;
+    ( x + centerOffsetX ) * gitConfig.NODE_SPACING_X + gitConfig.COMMIT_RADIUS;
   const getNodeY = (y: number) =>
     maxY - (y * gitConfig.NODE_SPACING_Y + gitConfig.COMMIT_RADIUS);
   const getNodeYForFollow = (y: number) =>
@@ -300,8 +348,154 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
     return nodes.find((node) => node.commit.id === currentCommit.id) ?? null;
   }, [currentCommit, nodes]);
 
-  const graphTranslateX = horizontalOffset;
-  const graphTranslateY = useMemo(() => {
+  const currentBranchHeadNode = useMemo( () =>
+  {
+    if ( !gitState.currentBranch ) return null;
+    const branch = gitState.branches.get( gitState.currentBranch );
+    if ( !branch || !branch.headCommitId ) return null;
+    return nodes.find( ( node ) => node.commit.id === branch.headCommitId ) ?? null;
+  }, [gitState.currentBranch, gitState.branches, nodes] );
+
+  const handleCanvasPointerDown = ( event: React.PointerEvent<HTMLDivElement> ) =>
+  {
+    if ( event.button !== 0 ) return;
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    panStartRef.current = panOffsetRef.current;
+    setIsPanning( true );
+    event.currentTarget.setPointerCapture( event.pointerId );
+  };
+
+  const handleCanvasPointerMove = ( event: React.PointerEvent<HTMLDivElement> ) =>
+  {
+    if ( !isPanning || !pointerStartRef.current || !panStartRef.current ) return;
+
+    const deltaX = event.clientX - pointerStartRef.current.x;
+    const deltaY = event.clientY - pointerStartRef.current.y;
+
+    if ( !hasUserDraggedRef.current && Math.hypot( deltaX, deltaY ) > 3 ) {
+      hasUserDraggedRef.current = true;
+      setHasUserDragged( true );
+    }
+
+    panOffsetRef.current = {
+      x: panStartRef.current.x + deltaX,
+      y: panStartRef.current.y + deltaY,
+    };
+
+    if ( panFrameRef.current === null ) {
+      panFrameRef.current = requestAnimationFrame( () =>
+      {
+        setPanOffset( panOffsetRef.current );
+        panFrameRef.current = null;
+      } );
+    }
+  };
+
+  const handleCanvasPointerEnd = ( event: React.PointerEvent<HTMLDivElement> ) =>
+  {
+    if ( !isPanning ) return;
+    setIsPanning( false );
+    if ( panFrameRef.current !== null ) {
+      cancelAnimationFrame( panFrameRef.current );
+      panFrameRef.current = null;
+    }
+    setPanOffset( panOffsetRef.current );
+    panStartRef.current = null;
+    pointerStartRef.current = null;
+    if ( event.currentTarget.hasPointerCapture( event.pointerId ) ) {
+      event.currentTarget.releasePointerCapture( event.pointerId );
+    }
+  };
+
+  const applyZoom = ( nextZoom: number ) =>
+  {
+    const clampedZoom = Math.max( MIN_ZOOM, Math.min( MAX_ZOOM, +nextZoom.toFixed( 2 ) ) );
+    const prevZoom = zoomRef.current;
+
+    if ( clampedZoom === prevZoom ) return;
+
+    if ( containerWidth <= 0 || containerHeight <= 0 ) {
+      zoomRef.current = clampedZoom;
+      setZoom( clampedZoom );
+      return;
+    }
+
+    const zoomRatio = clampedZoom / prevZoom;
+    const viewportCenterX = containerWidth / 2;
+    const viewportCenterY = containerHeight / 2;
+    const originX = maxX / 2;
+    const originY = maxY / 2;
+
+    const currentTranslateX = autoMainCenterTranslateX + ( hasUserDraggedRef.current ? panOffsetRef.current.x : 0 );
+    const currentTranslateY = autoGraphTranslateY + panOffsetRef.current.y;
+
+    const nextPan = {
+      x: hasUserDraggedRef.current
+        ? viewportCenterX -
+        autoMainCenterTranslateX -
+        originX -
+        ( viewportCenterX - currentTranslateX - originX ) * zoomRatio
+        : 0,
+      y:
+        viewportCenterY -
+        autoGraphTranslateY -
+        originY -
+        ( viewportCenterY - currentTranslateY - originY ) * zoomRatio,
+    };
+
+    panOffsetRef.current = nextPan;
+    setPanOffset( nextPan );
+    zoomRef.current = clampedZoom;
+    setZoom( clampedZoom );
+  };
+
+  const handleZoomIn = () =>
+  {
+    applyZoom( zoomRef.current + ZOOM_STEP );
+  };
+
+  const handleZoomOut = () =>
+  {
+    applyZoom( zoomRef.current - ZOOM_STEP );
+  };
+
+  const handleResetView = () =>
+  {
+    setZoom( 1 );
+    zoomRef.current = 1;
+    hasUserDraggedRef.current = false;
+    setHasUserDragged( false );
+    panOffsetRef.current = { x: 0, y: 0 };
+    setPanOffset( { x: 0, y: 0 } );
+  };
+
+  const autoMainCenterTranslateX = useMemo( () =>
+  {
+    const viewportCenterX = containerWidth > 0 ? containerWidth / 2 : maxX / 2;
+    const originX = maxX / 2;
+    const targetBranchX = currentBranchHeadNode ? currentBranchHeadNode.x : 0;
+    const branchNodeX = getNodeX( targetBranchX );
+
+    if ( !currentBranchHeadNode ) {
+      return 0;
+    }
+
+    const nodeScreenXWithZoom = branchNodeX * zoom;
+    const leftBound = -containerWidth * 0.1;
+    const rightBound = containerWidth * 1.1;
+
+    const isInViewport = nodeScreenXWithZoom >= leftBound && nodeScreenXWithZoom <= rightBound;
+
+    if ( isInViewport ) {
+      return 0;
+    }
+
+    return originX + ( viewportCenterX - originX ) / zoom - branchNodeX;
+  }, [containerWidth, maxX, zoom, centerOffsetX, gitConfig.NODE_SPACING_X, gitConfig.COMMIT_RADIUS, currentBranchHeadNode] );
+
+  const graphTranslateX = autoMainCenterTranslateX + ( hasUserDragged ? panOffset.x : 0 );
+  const autoGraphTranslateY = useMemo( () =>
+  {
     const baseTranslate = -verticalOffset;
 
     if (containerHeight <= 0) {
@@ -368,21 +562,58 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
     followMainHead,
     currentCommitNode,
   ]);
+  const graphTranslateY = autoGraphTranslateY + panOffset.y;
 
   return (
     <div className="w-full h-full bg-slate-800 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="border-b border-slate-700 px-4 py-3 bg-slate-900">
-        <p className="text-lg font-medium text-slate-300">Git Graph</p>
-        <p className="text-md text-slate-500">
-          {nodes.length} commits • {gitState.branches.size} branches
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-row flex-wrap gap-x-5 items-center">
+            <p className="text-lg font-medium text-slate-300">Git Graph</p>
+            <p className="text-md text-slate-500">
+              {nodes.length} commits • {gitState.branches.size} branches
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="px-2 py-1 text-slate-300 border border-slate-600 rounded hover:bg-slate-800 transition-colors"
+            >
+              -
+            </button>
+            <span className="text-slate-300 text-sm w-14 text-center">
+              {Math.round( zoom * 100 )}%
+            </span>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="px-2 py-1 text-slate-300 border border-slate-600 rounded hover:bg-slate-800 transition-colors"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={handleResetView}
+              className="px-2 py-1 text-slate-300 border border-slate-600 rounded hover:bg-slate-800 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* SVG Canvas */}
       <div
         ref={canvasRef}
-        className=" flex flex-1 overflow-auto scrollbar-hide"
+        className={`flex flex-1 overflow-auto scrollbar-hide select-none ${ isPanning ? "cursor-grabbing" : "cursor-grab" }`}
+        style={{ touchAction: "none" }}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerEnd}
+        onPointerLeave={handleCanvasPointerEnd}
+        onPointerCancel={handleCanvasPointerEnd}
       >
         {nodes.length === 0 ? (
           <div className="w-full h-full flex items-center justify-center text-slate-400 text-lg">
@@ -395,17 +626,18 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
             className="bg-slate-750 self-center-safe"
             style={{ minWidth: "100%", minHeight: "100%" }}
           >
+              <title>SVG</title>
             <defs>
               <style>{`
-                                @keyframes pulse {
-                                    0%, 100% {
-                                        stroke-width: 2;
-                                    }
-                                    50% {
-                                        stroke-width: 3;
-                                    }
-                                }
-                            `}</style>
+                  @keyframes pulse {
+                      0%, 100% {
+                          stroke-width: 2;
+                      }
+                      50% {
+                          stroke-width: 3;
+                      }
+                  }
+              `}</style>
             </defs>
             <motion.g
               initial={false}
@@ -413,19 +645,17 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                 x: graphTranslateX,
                 y: graphTranslateY,
                 rotate: gitConfig.GRAPH_ROTATION || 0,
+                scale: zoom,
               }}
               style={{
                 transformOrigin: `${maxX / 2}px ${maxY / 2}px`,
               }}
               transition={{
-                duration: Math.max(
-                  0.35,
-                  (gitConfig.GRAPH_ANIMATION_DURATION + 50) / 1000,
-                ),
+                duration: isPanning ? 0 : Math.max( 0.25, gitConfig.GRAPH_ANIMATION_DURATION / 1000 ),
                 ease: "easeInOut",
               }}
             >
-              {rightColumnAnchor && (
+                {rightColumnAnchor && (
                 <circle
                   cx={getNodeX(rightColumnAnchor.x)}
                   cy={getNodeY(rightColumnAnchor.y)}
@@ -436,7 +666,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                   pointerEvents="none"
                 />
               )}
-              <circle
+                <circle
                 cx={getNodeX(leftColumnAnchor.x)}
                 cy={getNodeY(leftColumnAnchor.y)}
                 r={gitConfig.COMMIT_RADIUS}

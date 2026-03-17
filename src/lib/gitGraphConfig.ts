@@ -75,6 +75,7 @@ class GitGraphConfig
     readonly COMMAND_DELAY = 250; // ms before executing command after typing
     readonly ACTION_ANIMATION_DELAY = 250; // ms to let the graph animate before next command
     readonly GRAPH_ANIMATION_DURATION = 500; // ms for graph animations (edges, nodes, HEAD)
+    readonly GRAPH_ROTATION = 0; // Degrees to rotate the graph (for better fitting certain layouts)
 }
 
 // Create a singleton instance

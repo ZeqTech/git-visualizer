@@ -13,9 +13,8 @@ import
 {
     type GitState,
     createEmptyGitState,
-    buildCommitGraph,
 } from "@/lib/gitState";
-import { parseGitCommand, type ParsedCommand } from "@/lib/gitParser";
+import { parseGitCommand } from "@/lib/gitParser";
 import { executeCommand } from "@/lib/gitExecutor";
 import { DEMOS, type DemoType } from "@/lib/demoCommands";
 import { gitConfig } from "@/lib/gitGraphConfig";
@@ -33,7 +32,7 @@ export default function GitVisualizerPage()
 {
     const [gitState, setGitState] = useState<GitState>( createEmptyGitState() );
     const terminalRef = useRef<TerminalHandle>( null );
-    const [selectedCommitId, setSelectedCommitId] = useState<string | null>( null );
+    const [_, setSelectedCommitId] = useState<string | null>( null );
     const [demoMode, setDemoMode] = useState( false );
     const [demoIndex, setDemoIndex] = useState( 0 );
     const [isStacked, setIsStacked] = useState( false );
@@ -88,45 +87,6 @@ export default function GitVisualizerPage()
         () => DEMOS[selectedDemo as DemoType] || [],
         [selectedDemo],
     );
-
-    const predictedGraphContentHeight = useMemo( () =>
-    {
-        if ( !demoMode || currentDemoCommands.length === 0 ) return undefined;
-
-        let simulatedState = createEmptyGitState();
-        for ( const command of currentDemoCommands ) {
-            const parsed = parseGitCommand( command );
-            if ( "error" in parsed && parsed.error ) continue;
-
-            const result = executeCommand( parsed as ParsedCommand, simulatedState, {
-                allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
-            } );
-
-            if ( result.newState ) {
-                simulatedState = result.newState;
-            }
-        }
-
-        const { nodes } = buildCommitGraph(
-            simulatedState,
-            graphConfig.FIRST_BRANCH_DIRECTION,
-        );
-        if ( nodes.length === 0 ) return graphConfig.NODE_SPACING_Y;
-
-        const maxDepth = Math.max( ...nodes.map( ( n ) => n.y ) );
-        return (
-            ( maxDepth + 1 ) * graphConfig.NODE_SPACING_Y +
-            graphConfig.COMMIT_RADIUS * 2 +
-            20
-        ); // Extra padding
-    }, [
-        demoMode,
-        currentDemoCommands,
-        settings.ALLOW_FAST_FORWARD_MERGES,
-        graphConfig.FIRST_BRANCH_DIRECTION,
-        graphConfig.NODE_SPACING_Y,
-        graphConfig.COMMIT_RADIUS,
-    ] );
 
     const demoProgress = useMemo( () =>
     {
@@ -349,7 +309,6 @@ export default function GitVisualizerPage()
         }
 
         // Execute the command
-        // @ts-ignore
         const result = executeCommand( parsed, gitState, {
             allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
         } );
@@ -577,6 +536,7 @@ export default function GitVisualizerPage()
                         className="min-w-[220px]"
                     />
                     {( DEMOS[selectedDemo as DemoType]?.length ?? 0 ) > 0 && (
+                        // biome-ignore lint/complexity/noUselessFragments: <explanation>
                         <>
                             {!demoMode ? (
                                 <button
@@ -624,7 +584,7 @@ export default function GitVisualizerPage()
 
             {/* Main Content */}
             <div
-                className={`flex flex-1 w-full h-full overflow-hidden ${ isStacked ? "flex-col-reverse" : "flex-row" }`}
+                className={`flex flex-1 w-full h-full overflow-auto ${ isStacked ? "flex-col-reverse" : "flex-row" }`}
             >
                 {/* Left Panel - Terminal */}
                 <div
@@ -653,7 +613,6 @@ export default function GitVisualizerPage()
                             gitState={gitState}
                             onCommitClick={setSelectedCommitId}
                             config={graphConfig}
-                            predictedGraphContentHeight={predictedGraphContentHeight}
                             demoProgress={demoProgress}
                             reserveRightColumn={true}
                             followMainHead={true}
@@ -664,12 +623,11 @@ export default function GitVisualizerPage()
 
             {/* Fullscreen Overlay */}
             {isFullscreen && (
-                <div className="fixed inset-0 top-[73px] bg-slate-500 z-50 flex flex-col p-20 ">
+                <div className="fixed inset-0 top-18.25  z-50 flex flex-col p-2 ">
                     <GitGraphComponent
                         gitState={gitState}
                         onCommitClick={setSelectedCommitId}
                         config={graphConfig}
-                        predictedGraphContentHeight={predictedGraphContentHeight}
                         demoProgress={demoProgress}
                         reserveRightColumn={true}
                         followMainHead={true}
@@ -679,7 +637,7 @@ export default function GitVisualizerPage()
 
             {isSettingsOpen && (
                 <div className="fixed inset-0 z-60 bg-black/50">
-                    <div className="absolute right-0 top-0 h-full w-[360px] bg-slate-900 border-l border-slate-700 flex flex-col">
+                    <div className="absolute right-0 top-0 h-full w-90 bg-slate-900 border-l border-slate-700 flex flex-col">
                         {/* Sticky Header */}
                         <div className="sticky top-0 bg-slate-900 p-4 border-b border-slate-700 z-10">
                             <div className="flex items-center justify-between">
