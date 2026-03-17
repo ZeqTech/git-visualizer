@@ -25,6 +25,9 @@ export interface ParsedCommand {
   message?: string;
   branchName?: string;
   targetBranch?: string;
+  oneline?: boolean;
+  resetMode?: "--hard" | "--soft";
+  resetTarget?: string;
   force?: boolean;
   createBranch?: boolean;
   squash?: boolean;

@@ -13,6 +13,7 @@ export interface TerminalProps {
   placeholder?: string;
   helpText?: string;
   fontSize?: number;
+  refocusOnEnter?: boolean;
 }
 
 export const TerminalComponent = React.forwardRef<
@@ -25,6 +26,7 @@ export const TerminalComponent = React.forwardRef<
       placeholder = "Enter a command...",
       helpText = "Type 'help' for available commands",
       fontSize = 14,
+      refocusOnEnter = true,
     },
     ref,
   ) => {
@@ -93,8 +95,27 @@ export const TerminalComponent = React.forwardRef<
         ]);
       } finally {
         setIsLoading(false);
+        if ( refocusOnEnter ) {
+          requestAnimationFrame( () => inputRef.current?.focus() );
+        }
       }
     };
+
+    const implementedGitFeatures = [
+      "git add <path>",
+      "git commit -m 'msg'",
+      "git branch, git branch <name>, git branch -d|-D <name>",
+      "git checkout <branch>, git checkout -b <branch>",
+      "git switch <branch>, git switch -c <branch>",
+      "git merge <branch>, git merge --squash <branch>",
+      "git rebase <branch>",
+      "git squash <branch>",
+      "git tag <name>",
+      "git log, git log --oneline",
+      "git reset --hard|--soft HEAD~<n>",
+      "git status",
+      "git pull <remote> <branch>",
+    ];
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       // Arrow up: navigate to previous command
@@ -164,8 +185,9 @@ export const TerminalComponent = React.forwardRef<
           ) : (
             history.map((output, idx) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
                 key={idx}
-                className={getOutputClasses(output.type)}
+                className={`${ getOutputClasses( output.type ) } whitespace-pre-wrap`}
                 style={{ fontSize }}
               >
                 {output.text}
@@ -194,8 +216,31 @@ export const TerminalComponent = React.forwardRef<
               disabled={isLoading}
               className="flex-1 bg-slate-700 text-white px-3 py-2 rounded border border-slate-600 focus:border-blue-500 focus:outline-none font-mono disabled:opacity-50"
               style={{ fontSize }}
+              // biome-ignore lint/a11y/noAutofocus: <explanation>
               autoFocus
             />
+            <div className="relative group">
+              <button
+                type="button"
+                aria-label="Implemented git features"
+                title="Implemented git features"
+                className="w-8 h-8 rounded border border-slate-600 bg-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition-colors font-semibold"
+                style={{ fontSize: Math.max( 12, fontSize - 1 ) }}
+              >
+                i
+              </button>
+              <div className="pointer-events-none absolute bottom-10 right-0 z-20 hidden group-hover:block w-104 rounded border border-slate-600 bg-slate-900/95 p-3 shadow-lg">
+                <p className="text-xs font-semibold text-slate-200 mb-2">
+                  Implemented git features
+                </p>
+                <ul className="text-xs text-slate-300 space-y-1 list-disc pl-4">
+                  {implementedGitFeatures.map( ( feature ) => (
+                    <li key={feature}>{feature}</li>
+                  ) )}
+                </ul>
+                <p className="mt-2 text-xs font-semibold text-slate-200 mb-2 italic">Note: These might not be perfect but I tried to get them to represent the actual git features as accurately as possible.</p>
+              </div>
+            </div>
             <button
               type="submit"
               disabled={isLoading || !currentCommand.trim()}

@@ -67,16 +67,29 @@ export function parseSquash(parts: string[], rawInput: string): CommandResult {
  * Formats: git reset --hard HEAD~1 | git reset --soft HEAD
  */
 export function parseReset(parts: string[], rawInput: string): CommandResult {
-  if (parts.length < 2) {
+  if (parts.length < 3) {
     return {
       error: true,
-      message: "Reset requires --hard or --soft flag",
+      message: "Reset requires mode and target (e.g. git reset --hard HEAD~1)",
+      rawInput,
+    };
+  }
+
+  const mode = parts[1];
+  const target = parts[2];
+
+  if (mode !== "--hard" && mode !== "--soft") {
+    return {
+      error: true,
+      message: "Reset mode must be --hard or --soft",
       rawInput,
     };
   }
 
   return {
     type: "reset",
+    resetMode: mode,
+    resetTarget: target,
     rawInput,
   };
 }
@@ -96,7 +109,7 @@ export function parseTag(parts: string[], rawInput: string): CommandResult {
 
   return {
     type: "tag",
-    branchName: parts[1],
+    message: parts[1],
     rawInput,
   };
 }
@@ -106,8 +119,25 @@ export function parseTag(parts: string[], rawInput: string): CommandResult {
  * Formats: git log
  */
 export function parseLog(parts: string[], rawInput: string): CommandResult {
+  if (parts.length === 1) {
+    return {
+      type: "log",
+      oneline: false,
+      rawInput,
+    };
+  }
+
+  if (parts.length === 2 && parts[1] === "--oneline") {
+    return {
+      type: "log",
+      oneline: true,
+      rawInput,
+    };
+  }
+
   return {
-    type: "log",
+    error: true,
+    message: "Unsupported log option. Use 'git log' or 'git log --oneline'",
     rawInput,
   };
 }

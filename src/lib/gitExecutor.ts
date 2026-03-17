@@ -75,11 +75,11 @@ export function executeCommand(
       case "branch-list":
         return executeBranchList(currentState);
       case "log":
-        return executeLog(currentState);
+        return executeLog(command, currentState);
       case "status":
         return executeStatus(currentState);
       case "reset":
-        return executeReset();
+        return executeReset(command, currentState);
       default:
         return {
           success: false,

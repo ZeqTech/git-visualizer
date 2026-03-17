@@ -120,6 +120,30 @@ export function validateCommand(
       }
       return { valid: true };
 
+    case "reset":
+      if (!command.resetMode || !command.resetTarget) {
+        return {
+          valid: false,
+          reason: "Reset requires mode and target (e.g. git reset --hard HEAD~1)",
+        };
+      }
+
+      if (command.resetMode !== "--hard" && command.resetMode !== "--soft") {
+        return {
+          valid: false,
+          reason: "Reset mode must be --hard or --soft",
+        };
+      }
+
+      if (!/^HEAD(~\d+)?$/.test(command.resetTarget)) {
+        return {
+          valid: false,
+          reason: "Only HEAD or HEAD~<n> targets are supported",
+        };
+      }
+
+      return { valid: true };
+
     default:
       return { valid: true };
   }

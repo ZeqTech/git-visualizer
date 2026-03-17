@@ -11,7 +11,7 @@ export function executeTag(
   command: ParsedCommand,
   state: GitState,
 ): ExecutionResult {
-  const tagName = command.message; // Use message field for tag name
+  const tagName = command.message ?? command.branchName;
   const currentCommit = getCurrentCommit(state);
 
   if (!tagName) {

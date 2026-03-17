@@ -294,9 +294,9 @@ const DEMOS = {
     "git commit -m 'Initial commit'",
     "git commit -m 'Second commit'",
     "git commit -m 'Third commit'",
-    "git log",
+    "git log --oneline",
     "git reset --hard HEAD~1",
-    "git log",
+    "git log --oneline",
   ],
 
 }

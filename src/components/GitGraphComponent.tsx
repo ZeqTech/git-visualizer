@@ -107,6 +107,20 @@ const wrapMessageText = (
   return lines;
 };
 
+const getLabelBackgroundWidth = (
+  text: string,
+  fontSize: number,
+  minWidth: number,
+  paddingX = 8,
+): number =>
+{
+  const averageMonospaceCharWidth = fontSize * 0.62;
+  return Math.max(
+    minWidth,
+    Math.ceil( text.length * averageMonospaceCharWidth ) + paddingX * 2,
+  );
+};
+
 export const GitGraphComponent: React.FC<GitGraphProps> = ({
   gitState,
   onCommitClick,
@@ -895,6 +909,12 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                   const messageLineHeight = messageFontSize + 2;
                   const messageStartY = 1 + gitConfig.MESSAGE_OFFSET;
                   const tagHeight = tagFontSize + 6;
+                  const hashText = node.commit.id.substring( 0, 6 );
+                  const hashBgWidth = getLabelBackgroundWidth(
+                    hashText,
+                    hashFontSize,
+                    50,
+                  );
 
                   return (
                     <motion.g
@@ -960,7 +980,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                           <rect
                             x={gitConfig.COMMIT_RADIUS + 8}
                             y={hashRectY}
-                            width={50}
+                            width={hashBgWidth}
                             height={hashHeight}
                             fill={gitConfig.TEXT_BG_COLOR}
                             rx="2"
@@ -977,7 +997,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                             className="pointer-events-none select-none"
                             transform={`rotate(${counterRotation} ${gitConfig.COMMIT_RADIUS + 12} ${gitConfig.MESSAGE_OFFSET})`}
                           >
-                            {node.commit.id.substring(0, 6)}
+                            {hashText}
                           </text>
                         </>
                       )}
@@ -999,7 +1019,11 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                                   <rect
                                     x={gitConfig.COMMIT_RADIUS + 8}
                                     y={branchLabelY}
-                                    width={Math.max(40, bN.length * 7)}
+                                    width={getLabelBackgroundWidth(
+                                      bN,
+                                      branchFontSize,
+                                      40,
+                                    )}
                                     height={branchLabelHeight}
                                     fill={getBranchColor(
                                       branchName,
@@ -1056,7 +1080,11 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                               <rect
                                 x={gitConfig.COMMIT_RADIUS + 8}
                                 y={branchLabelStartY - branchLabelOffset}
-                                width={Math.max(50, labelText.length * 5 + 8)}
+                                width={getLabelBackgroundWidth(
+                                  labelText,
+                                  branchFontSize,
+                                  50,
+                                )}
                                 height={branchLabelHeight}
                                 fill={labelColor}
                                 rx="3"
@@ -1099,10 +1127,10 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                             const maxLineLength = Math.max(
                               ...lines.map((l) => l.length),
                             );
-                            const averageCharWidth = messageFontSize * 0.6;
-                            const bgWidth = Math.max(
+                            const bgWidth = getLabelBackgroundWidth(
+                              "M".repeat( maxLineLength ),
+                              messageFontSize,
                               60,
-                              Math.ceil(maxLineLength * averageCharWidth) + 8,
                             );
                             return (
                               <rect
@@ -1165,12 +1193,17 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                             messageHeight +
                             8 +
                             idx * (tagHeight + branchLabelGap);
+                          const tagLabelText = `tag: ${ tag.name }`;
                           return (
                             <g key={`tag-${tag.name}`}>
                               <rect
                                 x={gitConfig.COMMIT_RADIUS + 8}
                                 y={tagY}
-                                width={Math.max(40, tag.name.length * 5 + 8)}
+                                width={getLabelBackgroundWidth(
+                                  tagLabelText,
+                                  tagFontSize,
+                                  40,
+                                )}
                                 height={tagHeight}
                                 fill={gitConfig.TAG_COLOR}
                                 rx="3"
@@ -1186,7 +1219,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                                 className="pointer-events-none select-none"
                                 transform={`rotate(${counterRotation} ${gitConfig.COMMIT_RADIUS + 12} ${tagY + tagFontSize + 2})`}
                               >
-                                tag: {tag.name}
+                                {tagLabelText}
                               </text>
                             </g>
                           );

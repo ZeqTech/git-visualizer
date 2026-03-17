@@ -44,6 +44,9 @@ export default function GitVisualizerPage()
     const demoModeRef = useRef( demoMode );
     const spaceResolveRef = useRef<null | ( () => void )>( null );
     const exportStatusTimeoutRef = useRef<NodeJS.Timeout | null>( null );
+    const presentationPresetSettings =
+        SETTINGS_PRESETS.find( ( preset ) => preset.key === "presentation" )
+            ?.settings ?? {};
 
     const defaultSettings: GraphSettings = {
         COMMIT_RADIUS: gitConfig.COMMIT_RADIUS,
@@ -75,6 +78,7 @@ export default function GitVisualizerPage()
         FOCUS_NODE_TOP_OFFSET: 40,
         FOCUS_NODE_BOTTOM_OFFSET: 40,
         GRAPH_ROTATION: 0,
+        ...presentationPresetSettings,
     };
 
     const [settings, setSettings] = useState<GraphSettings>( defaultSettings );
@@ -522,7 +526,9 @@ export default function GitVisualizerPage()
             <div className="border-b border-slate-700 px-6 py-4 bg-slate-900 flex items-center justify-between">
                 <div className="flex flex-row flex-wrap gap-4 items-center">
                     <h1 className="text-2xl font-bold">Git Visualizer By ZeqTech</h1>
+                    <div className="flex flex-col">
                     <a href="https://www.youtube.com/@ZeqTech" target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-400 hover:underline">Visit ZeqTech on YouTube</a>
+                        <a href="https://www.youtube.com/watch?v=x0nLbmVImag&t=140s" target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 hover:underline">Watch Merge Explanation Video</a></div>
                 </div>
                 <div className="flex gap-2 items-center">
                     <GroupedSelect
@@ -599,6 +605,7 @@ export default function GitVisualizerPage()
                         placeholder="git commit -m 'your message'"
                         helpText="Try: git commit -m 'msg' | git branch | git checkout -b name | git switch -c name | git merge [--squash] name | git branch -d/-D name"
                         fontSize={settings.TERMINAL_FONT_SIZE}
+                        refocusOnEnter={!settings.DEMO_STEP_ON_SPACE}
                     />
                 </div>
 
