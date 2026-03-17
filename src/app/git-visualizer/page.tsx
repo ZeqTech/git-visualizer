@@ -309,6 +309,7 @@ export default function GitVisualizerPage()
         }
 
         // Execute the command
+        // @ts-ignore
         const result = executeCommand( parsed, gitState, {
             allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
         } );

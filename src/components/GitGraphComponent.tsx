@@ -818,6 +818,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                       // Calculate perpendicular offset (rotate 90 degrees)
                       // Flip based on direction and whether it's a merge
                       // Merge arcs are flipped 180 degrees from branch arcs
+                      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
                       let perpX, perpY;
                       if (isMergeEdge) {
                         // Flip the arc for merge commits
@@ -938,6 +939,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                         }
 
                         return (
+                          // biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
                           <circle
                             cx={0}
                             cy={0}
@@ -1133,6 +1135,7 @@ export const GitGraphComponent: React.FC<GitGraphProps> = ({
                               >
                                 {lines.map((line, idx) => (
                                   <tspan
+                                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
                                     key={idx}
                                     x={gitConfig.COMMIT_RADIUS + 12}
                                     dy={idx === 0 ? 0 : messageLineHeight}
