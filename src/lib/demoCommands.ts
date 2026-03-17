@@ -1,0 +1,307 @@
+
+type DemoType = "merge" | "merge_2" | "merge_flow" | "merge_flow_6" | "merge_flow_7" | "branching_2" | "rebasing" | "tagging" | "resetting" | "fast_forward_merge" | "regular_merge" | "squash_merge";
+
+const demoType = "merge" as DemoType;
+
+const DEMOS = {
+  merge: [
+    "git commit -m 'Initial commit'",
+    "git branch feature-1",
+    "git checkout feature-1",
+    "git commit -m 'Add feature'",
+    "git commit -m 'Formatted Code'",
+    "git checkout main",
+    // "git merge feature-1",
+  ],
+    fast_forward_merge: [
+    "git commit -m 'Initial commit'",
+    "git branch feature",
+    "git checkout feature",
+    "git commit -m 'Feature commit 1'",
+    "git commit -m 'Feature commit 2'",
+    "git commit -m 'Feature commit 3'",
+    "git checkout main",
+    "git merge feature",
+    "git branch -d feature",
+  ],
+  regular_merge: [
+    "git commit -m 'Initial commit'",
+    "git branch feature",
+    "git checkout feature",
+    "git commit -m 'Feature work 1'",
+    "git commit -m 'Feature work 2'",
+    "git checkout main",
+    "git commit -m 'Main work 1'",
+    "git commit -m 'Main work 2'",
+    "git merge feature",
+  ],
+  squash_merge: [
+    "git commit -m 'Initial commit'",
+    "git commit -m 'Second commit'",
+    "git branch feature",
+    "git checkout feature",
+    "git commit -m 'Feature commit 1'",
+    "git commit -m 'Feature commit 2'",
+    "git checkout main",
+    "git commit -m 'Main work'",
+    "git merge --squash feature",
+    "git commit -m 'Squash feature work'",
+  ],
+  merge_2: [
+    "git commit -m 'Initial commit'",
+    "git branch feature-1",
+    "git checkout feature-1",
+    "git commit -m 'Add feature'",
+    "git checkout main",
+    "git branch feature-2",
+    "git checkout feature-2",
+    "git commit -m 'Add feature'",
+    "git checkout main",
+    "git branch feature-3",
+    "git checkout feature-3",
+    "git commit -m 'Add feature'",
+    "git checkout main",
+    "git branch feature-4",
+    "git checkout feature-4",
+    "git commit -m 'Add feature'",
+    "git checkout main",
+    "git merge feature-1",
+    "git merge feature-2",
+    "git merge feature-3",
+    "git merge feature-4",
+    "git branch feature-5",
+    "git checkout feature-5",
+    "git commit -m 'Add feature'",
+    "git checkout main",
+    "git merge feature-5",
+  ],
+    merge_flow: [
+    "git commit -m 'Initial commit'",
+
+    "git branch feature-1",
+    "git commit -m 'Add feature' -b feature-1",
+    "git commit -m 'Add feature' -b feature-1",
+
+    "git branch feature-2",
+    "git commit -m 'Add feature' -b feature-2",
+    "git commit -m 'Add feature' -b feature-2",
+    "git merge feature-1",
+    "git merge feature-2",
+
+    "git branch feature-3",
+    "git commit -m 'Add feature' -b feature-3",
+    "git commit -m 'Add feature' -b feature-3",
+
+
+    "git branch feature-4",
+    "git commit -m 'Add feature' -b feature-4",
+    "git commit -m 'Add feature' -b feature-4",
+    "git merge feature-3",
+    "git merge feature-4",
+
+    "git branch feature-5",
+    "git commit -m 'Add feature' -b feature-5",
+    "git commit -m 'Add feature' -b feature-5",
+
+    "git branch feature-6",
+    "git commit -m 'Add feature' -b feature-6",
+    "git commit -m 'Add feature' -b feature-6",
+    "git merge feature-5",
+    "git merge feature-6",
+
+    "git branch feature-7",
+    "git commit -m 'Add feature' -b feature-7",
+    "git commit -m 'Add feature' -b feature-7",
+
+    "git branch feature-8",
+    "git commit -m 'Add feature' -b feature-8",
+    "git commit -m 'Add feature' -b feature-8",
+    "git checkout feature-8",
+    "git squash main",
+    "git checkout main",
+    "git merge feature-7",
+    "git merge feature-8",
+
+  ],
+  merge_flow_6: [
+    "git commit -m 'Initial commit'",
+
+    // Wave 1 (2 branches)
+    "git branch feature-a",
+    "git commit -m 'Add feature' -b feature-a",
+    "git commit -m 'Add feature' -b feature-a",
+    "git branch feature-b",
+    "git commit -m 'Add feature' -b feature-b",
+    "git commit -m 'Add feature' -b feature-b",
+    "git commit -m 'Add feature' -b feature-a",
+    "git merge feature-a",
+    "git merge feature-b",
+
+    // Wave 2 (4 branches)
+    "git branch feature-c",
+    "git commit -m 'Add feature' -b feature-c",
+    "git branch feature-d",
+    "git commit -m 'Add feature' -b feature-d",
+    "git commit -m 'Add feature' -b feature-d",
+    "git branch feature-e",
+    "git commit -m 'Add feature' -b feature-e",
+    "git commit -m 'Add feature' -b feature-d",
+    "git commit -m 'Add feature' -b feature-c",
+    "git branch feature-f",
+    "git commit -m 'Add feature' -b feature-f",
+    "git commit -m 'Add feature' -b feature-f",
+    "git commit -m 'Add feature' -b feature-e",
+    "git merge feature-c",
+    "git merge feature-d",
+    "git merge feature-e",
+    "git merge feature-f",
+
+    // Wave 3 (6 branches)
+    "git branch feature-g",
+    "git commit -m 'Add feature' -b feature-g",
+    "git commit -m 'Add feature' -b feature-g",
+    "git branch feature-h",
+    "git commit -m 'Add feature' -b feature-h",
+    "git branch feature-i",
+    "git commit -m 'Add feature' -b feature-i",
+    "git commit -m 'Add feature' -b feature-i",
+    "git branch feature-j",
+    "git commit -m 'Add feature' -b feature-j",
+    "git commit -m 'Add feature' -b feature-h",
+    "git commit -m 'Add feature' -b feature-g",
+    "git branch feature-k",
+    "git commit -m 'Add feature' -b feature-k",
+    "git commit -m 'Add feature' -b feature-k",
+    "git branch feature-l",
+    "git commit -m 'Add feature' -b feature-l",
+    "git commit -m 'Add feature' -b feature-j",
+    "git commit -m 'Add feature' -b feature-l",
+    "git commit -m 'Add feature' -b feature-j",
+    "git merge feature-g",
+    "git merge feature-h",
+    "git commit -m 'Add feature' -b feature-l",
+    "git commit -m 'Add feature' -b feature-j",
+    "git commit -m 'Add feature' -b feature-l",
+    "git merge feature-i",
+    "git commit -m 'Add feature' -b feature-l",
+    "git commit -m 'Add feature' -b feature-j",
+    "git merge feature-j",
+    "git merge feature-k",
+    "git commit -m 'Add feature' -b feature-l",
+    "git merge feature-l",
+  ],
+    merge_flow_7: [
+    "git commit -m 'Initial commit'",
+
+    // Set 1
+    "git branch feature-1",
+    "git commit -m 'Add feature' -b feature-1",
+    "git commit -m 'Add feature' -b feature-1",
+
+    "git branch feature-2",
+    "git commit -m 'Add feature' -b feature-2",
+    "git merge feature-1",
+    "git merge feature-2",
+
+    // Set 2
+    "git branch feature-3",
+    "git commit -m 'Add feature' -b feature-3",
+
+    "git branch feature-4",
+    "git commit -m 'Add feature' -b feature-3",
+    "git commit -m 'Add feature' -b feature-4",
+    "git commit -m 'Add feature' -b feature-4",
+    "git merge feature-3",
+    "git commit -m 'Add feature' -b feature-4",
+    "git commit -m 'Add feature' -b feature-4",
+    "git commit -m 'Add feature' -b feature-4",
+    "git merge feature-4",
+
+    // Set 3
+    "git branch feature-5",
+    "git commit -m 'Add feature' -b feature-5",
+    "git commit -m 'Add feature' -b feature-5",
+
+    "git branch feature-6",
+    "git commit -m 'Add feature' -b feature-6",
+    "git merge feature-5",
+    "git merge feature-6",
+
+    // Set 4
+    "git branch feature-7",
+    "git commit -m 'Add feature' -b feature-7",
+
+    "git branch feature-8",
+    "git commit -m 'Add feature' -b feature-8",
+    "git commit -m 'Add feature' -b feature-8",
+    "git commit -m 'Add feature' -b feature-8",
+    "git merge feature-7",
+    "git merge feature-8",
+
+    // Set 5
+    "git branch feature-9",
+    "git commit -m 'Add feature' -b feature-9",
+    "git commit -m 'Add feature' -b feature-9",
+
+    "git branch feature-10",
+    "git commit -m 'Add feature' -b feature-10",
+    "git merge feature-9",
+    "git merge feature-10",
+
+    // Set 6
+    "git branch feature-11",
+    "git commit -m 'Add feature' -b feature-11",
+
+    "git branch feature-12",
+    "git commit -m 'Add feature' -b feature-12",
+    "git commit -m 'Add feature' -b feature-11",
+    "git commit -m 'Add feature' -b feature-12",
+    "git merge feature-11",
+    "git merge feature-12",
+    ],
+
+  branching_2: [
+    "git commit -m 'Initial commit'",
+    "git branch feature/login",
+    "git checkout feature/login",
+    "git commit -m 'Add login feature'",
+    "git commit -m 'Formatted code'",
+    "git checkout main",
+    "git merge feature/login",
+    "git branch -d feature/login",
+  ],
+  rebasing: [
+    "git commit -m 'Initial commit'",
+    "git commit -m 'Second commit'",
+    "git branch feature",
+    "git checkout feature",
+    "git commit -m 'Feature commit 1'",
+    "git commit -m 'Feature commit 2'",
+    "git checkout main",
+    "git commit -m 'Main commit 1'",
+    "git commit -m 'Main commit 2'",
+    "git checkout feature",
+    "git rebase main",
+  ],
+  tagging: [
+    "git commit -m 'Initial commit'",
+    "git tag v1.0",
+    "git commit -m 'Second commit'",
+    "git tag v1.1",
+    "git branch develop",
+    ],
+  resetting: [
+    "git commit -m 'Initial commit'",
+    "git commit -m 'Second commit'",
+    "git commit -m 'Third commit'",
+    "git log",
+    "git reset --hard HEAD~1",
+    "git log",
+  ],
+
+}
+
+
+export const DEMO_COMMANDS: string[] = DEMOS?.[demoType] || [];
+export { DEMOS };
+export type { DemoType };

@@ -1,0 +1,143 @@
+export type GraphSettings = {
+  COMMIT_RADIUS: number;
+  NODE_SPACING_X: number;
+  NODE_SPACING_Y: number;
+  OFFSET_LEFT: number;
+  OFFSET_TOP: number;
+  ARC_CURVATURE: number;
+  LONG_DISTANCE_THRESHOLD: number;
+  CUBIC_CURVE_CONTROL_POINT: number;
+  INVERT_CUBIC_CURVES: boolean;
+  MESSAGE_OFFSET: number;
+  MESSAGE_WRAP_LENGTH: number;
+  SHOW_TEXT_LABELS: boolean;
+  COMMIT_HASH_FONT_SIZE: number;
+  COMMIT_MESSAGE_FONT_SIZE: number;
+  BRANCH_LABEL_FONT_SIZE: number;
+  TAG_LABEL_FONT_SIZE: number;
+  EDGE_WIDTH: number;
+  SHOW_MERGE_TYPE_LABELS: boolean;
+  INITIAL_DEMO_DELAY: number;
+  DEMO_STEP_ON_SPACE: boolean;
+  TERMINAL_FONT_SIZE: number;
+  TYPING_DELAY: number;
+  COMMAND_DELAY: number;
+  ACTION_ANIMATION_DELAY: number;
+  GRAPH_ANIMATION_DURATION: number;
+  ALLOW_FAST_FORWARD_MERGES: boolean;
+  FOCUS_NODE_TOP_OFFSET: number;
+  FOCUS_NODE_BOTTOM_OFFSET: number;
+  GRAPH_ROTATION: 0 | 90 | 180 | 270;
+};
+
+export const SETTINGS_PRESETS: Array<{
+  key: string;
+  label: string;
+  settings: Partial<GraphSettings>;
+}> = [
+  {
+    key: "speedy",
+    label: "Speedy",
+    settings: {
+      COMMIT_RADIUS: 12,
+      NODE_SPACING_X: 60,
+      NODE_SPACING_Y: 90,
+      OFFSET_LEFT: 10,
+      OFFSET_TOP: 10,
+      ARC_CURVATURE: 0.45,
+      LONG_DISTANCE_THRESHOLD: 1,
+      CUBIC_CURVE_CONTROL_POINT: 1.1,
+      INVERT_CUBIC_CURVES: true,
+      MESSAGE_OFFSET: 4,
+      MESSAGE_WRAP_LENGTH: 20,
+      SHOW_TEXT_LABELS: false,
+      COMMIT_HASH_FONT_SIZE: 10,
+      COMMIT_MESSAGE_FONT_SIZE: 9,
+      BRANCH_LABEL_FONT_SIZE: 8,
+      TAG_LABEL_FONT_SIZE: 8,
+      EDGE_WIDTH: 4,
+      SHOW_MERGE_TYPE_LABELS: false,
+      INITIAL_DEMO_DELAY: 2000,
+      DEMO_STEP_ON_SPACE: false,
+      TERMINAL_FONT_SIZE: 12,
+      TYPING_DELAY: 0,
+      COMMAND_DELAY: 0,
+      ACTION_ANIMATION_DELAY: 250,
+      GRAPH_ANIMATION_DURATION: 300,
+      ALLOW_FAST_FORWARD_MERGES: false,
+      FOCUS_NODE_TOP_OFFSET: 50,
+      FOCUS_NODE_BOTTOM_OFFSET: 20,
+      GRAPH_ROTATION: 0,
+    },
+  },
+  {
+    key: "horizontal",
+    label: "Horizontal",
+    settings: {
+      COMMIT_RADIUS: 12,
+      NODE_SPACING_X: 60,
+      NODE_SPACING_Y: 90,
+      OFFSET_LEFT: 10,
+      OFFSET_TOP: 10,
+      ARC_CURVATURE: 0.45,
+      LONG_DISTANCE_THRESHOLD: 1,
+      CUBIC_CURVE_CONTROL_POINT: 1.1,
+      INVERT_CUBIC_CURVES: true,
+      MESSAGE_OFFSET: 4,
+      MESSAGE_WRAP_LENGTH: 20,
+      SHOW_TEXT_LABELS: false,
+      COMMIT_HASH_FONT_SIZE: 10,
+      COMMIT_MESSAGE_FONT_SIZE: 9,
+      BRANCH_LABEL_FONT_SIZE: 8,
+      TAG_LABEL_FONT_SIZE: 8,
+      EDGE_WIDTH: 4,
+      SHOW_MERGE_TYPE_LABELS: false,
+      INITIAL_DEMO_DELAY: 2000,
+      DEMO_STEP_ON_SPACE: false,
+      TERMINAL_FONT_SIZE: 12,
+      TYPING_DELAY: 0,
+      COMMAND_DELAY: 0,
+      ACTION_ANIMATION_DELAY: 250,
+      GRAPH_ANIMATION_DURATION: 300,
+      ALLOW_FAST_FORWARD_MERGES: false,
+      FOCUS_NODE_TOP_OFFSET: 50,
+      FOCUS_NODE_BOTTOM_OFFSET: 20,
+      GRAPH_ROTATION: 90,
+    },
+  },
+  {
+    key: "presentation",
+    label: "Presentation",
+    settings: {
+      COMMIT_RADIUS: 25,
+      NODE_SPACING_X: 220,
+      NODE_SPACING_Y: 130,
+      OFFSET_LEFT: 300,
+      OFFSET_TOP: -80,
+      ARC_CURVATURE: 0.45,
+      LONG_DISTANCE_THRESHOLD: 1,
+      CUBIC_CURVE_CONTROL_POINT: 1.1,
+      INVERT_CUBIC_CURVES: true,
+      MESSAGE_OFFSET: 10,
+      MESSAGE_WRAP_LENGTH: 20,
+      SHOW_TEXT_LABELS: true,
+      COMMIT_HASH_FONT_SIZE: 13,
+      COMMIT_MESSAGE_FONT_SIZE: 15,
+      BRANCH_LABEL_FONT_SIZE: 11,
+      TAG_LABEL_FONT_SIZE: 12,
+      EDGE_WIDTH: 6,
+      SHOW_MERGE_TYPE_LABELS: true,
+      INITIAL_DEMO_DELAY: 2000,
+      DEMO_STEP_ON_SPACE: false,
+      TERMINAL_FONT_SIZE: 20,
+      TYPING_DELAY: 0,
+      COMMAND_DELAY: 500,
+      ACTION_ANIMATION_DELAY: 350,
+      GRAPH_ANIMATION_DURATION: 500,
+      ALLOW_FAST_FORWARD_MERGES: true,
+      FOCUS_NODE_TOP_OFFSET: 50,
+      FOCUS_NODE_BOTTOM_OFFSET: 20,
+      GRAPH_ROTATION: 0,
+    },
+  },
+];
