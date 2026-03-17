@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "ZeqTech Git Visualizer",
   description: "A visual tool for exploring Git repositories, created by ZeqTech.",
   icons: {
-    icon: "/icon.png",
+    icon: "./icon.png",
   }
 };
 
