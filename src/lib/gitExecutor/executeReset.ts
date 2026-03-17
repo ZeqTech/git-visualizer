@@ -40,6 +40,7 @@ export function executeReset(
   let nextHeadId: string | null = currentBranch.headCommitId;
 
   for (let i = 0; i < steps; i += 1) {
+    // @ts-ignore
     const commit = nextHeadId ? state.commits.get(nextHeadId) : undefined;
     if (!commit) {
       nextHeadId = null;
