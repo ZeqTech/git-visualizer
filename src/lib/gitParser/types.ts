@@ -6,6 +6,12 @@
 export type GitCommandType =
   | "commit"
   | "add"
+  | "stash"
+  | "restore"
+  | "echo"
+  | "touch"
+  | "edit"
+  | "delete"
   | "branch"
   | "branch-delete"
   | "branch-list"
@@ -23,8 +29,14 @@ export type GitCommandType =
 export interface ParsedCommand {
   type: GitCommandType;
   message?: string;
+  echoContent?: string;
+  echoTarget?: string;
+  echoAppend?: boolean;
   branchName?: string;
   targetBranch?: string;
+  stashMode?: "push" | "pop" | "apply";
+  stashRestoreIndex?: boolean;
+  restoreStaged?: boolean;
   oneline?: boolean;
   resetMode?: "--hard" | "--soft";
   resetTarget?: string;

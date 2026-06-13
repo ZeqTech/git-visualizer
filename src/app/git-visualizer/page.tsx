@@ -2,17 +2,17 @@
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from "react";
-import
-{
-    TerminalComponent,
-    type TerminalHandle,
-    type TerminalOutput,
+import { AnimatePresence, motion } from "framer-motion";
+import {
+TerminalComponent,
+type TerminalHandle,
+type TerminalOutput,
 } from "@/components/TerminalComponent";
 import { GitGraphComponent } from "@/components/GitGraphComponent";
-import
-{
-    type GitState,
-    createEmptyGitState,
+import { GitZonesBoard } from "@/components/GitZonesBoard";
+import {
+type GitState,
+createEmptyGitState,
 } from "@/lib/gitState";
 import { parseGitCommand } from "@/lib/gitParser";
 import { executeCommand } from "@/lib/gitExecutor";
@@ -20,33 +20,33 @@ import { DEMOS, type DemoType } from "@/lib/demoCommands";
 import { gitConfig } from "@/lib/gitGraphConfig";
 import { cn } from "@/lib/utils";
 import { type GraphSettings, SETTINGS_PRESETS } from "./presetSettings";
-import
-{
-    GroupedSelect,
-    type GroupedSelectOption,
+import {
+GroupedSelect,
+type GroupedSelectOption,
 } from "@/components/ui/grouped-select";
 
 const SETTINGS_STORAGE_KEY = "git-graph-settings";
 
-export default function GitVisualizerPage()
-{
-    const [gitState, setGitState] = useState<GitState>( createEmptyGitState() );
-    const terminalRef = useRef<TerminalHandle>( null );
-    const [_, setSelectedCommitId] = useState<string | null>( null );
-    const [demoMode, setDemoMode] = useState( false );
-    const [demoIndex, setDemoIndex] = useState( 0 );
-    const [isStacked, setIsStacked] = useState( false );
-    const [isFullscreen, setIsFullscreen] = useState( false );
-    const [selectedDemo, setSelectedDemo] = useState<string>( "merge" );
-    const [isSettingsOpen, setIsSettingsOpen] = useState( false );
-    const [exportStatus, setExportStatus] = useState<string | null>( null );
-    const demoTimeoutRef = useRef<NodeJS.Timeout | null>( null );
-    const demoModeRef = useRef( demoMode );
-    const spaceResolveRef = useRef<null | ( () => void )>( null );
-    const exportStatusTimeoutRef = useRef<NodeJS.Timeout | null>( null );
+export default function GitVisualizerPage() {
+    const [gitState, setGitState] = useState<GitState>(createEmptyGitState());
+    const terminalRef = useRef<TerminalHandle>(null);
+    const [_, setSelectedCommitId] = useState<string | null>(null);
+    const [activeView, setActiveView] = useState<"graph" | "architecture">("graph");
+    const [demoMode, setDemoMode] = useState(false);
+    const [demoIndex, setDemoIndex] = useState(0);
+    const [isStacked, setIsStacked] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [selectedDemo, setSelectedDemo] = useState<string>("merge");
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [exportStatus, setExportStatus] = useState<string | null>(null);
+    const demoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const demoModeRef = useRef(demoMode);
+    const spaceResolveRef = useRef<null | (() => void)>(null);
+    const exportStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const presentationPresetSettings =
-        SETTINGS_PRESETS.find( ( preset ) => preset.key === "presentation" )
+        SETTINGS_PRESETS.find((preset) => preset.key === "presentation")
             ?.settings ?? {};
+    const sampleFilePath = "src/demo-file.txt";
 
     const defaultSettings: GraphSettings = {
         COMMIT_RADIUS: gitConfig.COMMIT_RADIUS,
@@ -81,9 +81,9 @@ export default function GitVisualizerPage()
         ...presentationPresetSettings,
     };
 
-    const [settings, setSettings] = useState<GraphSettings>( defaultSettings );
+    const [settings, setSettings] = useState<GraphSettings>(defaultSettings);
     const graphConfig = useMemo(
-        () => ( { ...gitConfig, ...settings } ),
+        () => ({ ...gitConfig, ...settings }),
         [settings],
     );
 
@@ -92,11 +92,10 @@ export default function GitVisualizerPage()
         [selectedDemo],
     );
 
-    const demoProgress = useMemo( () =>
-    {
-        if ( !demoMode || currentDemoCommands.length === 0 ) return undefined;
-        return Math.min( 1, demoIndex / Math.max( 1, currentDemoCommands.length ) );
-    }, [demoMode, demoIndex, currentDemoCommands.length] );
+    const demoProgress = useMemo(() => {
+        if (!demoMode || currentDemoCommands.length === 0) return undefined;
+        return Math.min(1, demoIndex / Math.max(1, currentDemoCommands.length));
+    }, [demoMode, demoIndex, currentDemoCommands.length]);
 
     const sliderSettings = [
         {
@@ -232,47 +231,42 @@ export default function GitVisualizerPage()
         },
     ] as const;
 
-    const toggleSettings = () =>
-    {
-        setIsSettingsOpen( ( prev ) => !prev );
+    const toggleSettings = () => {
+        setIsSettingsOpen((prev) => !prev);
     };
 
     const updateSetting = <K extends keyof GraphSettings>(
         key: K,
         value: GraphSettings[K],
-    ) =>
-    {
-        setSettings( ( prev ) => ( { ...prev, [key]: value } ) );
+    ) => {
+        setSettings((prev) => ({ ...prev, [key]: value }));
     };
 
-    const exportSettings = async () =>
-    {
-        const settingsText = JSON.stringify( settings, null, 4 );
-        const payload = `${ settingsText }`;
+    const exportSettings = async () => {
+        const settingsText = JSON.stringify(settings, null, 4);
+        const payload = `${settingsText}`;
 
         try {
-            await navigator.clipboard.writeText( payload );
-            setExportStatus( "Copied" );
+            await navigator.clipboard.writeText(payload);
+            setExportStatus("Copied");
         } catch {
-            window.prompt( "Copy settings preset:", payload );
-            setExportStatus( "Prompted" );
+            window.prompt("Copy settings preset:", payload);
+            setExportStatus("Prompted");
         }
 
-        if ( exportStatusTimeoutRef.current ) {
-            clearTimeout( exportStatusTimeoutRef.current );
+        if (exportStatusTimeoutRef.current) {
+            clearTimeout(exportStatusTimeoutRef.current);
         }
 
-        exportStatusTimeoutRef.current = setTimeout( () =>
-        {
-            setExportStatus( null );
-        }, 2000 );
+        exportStatusTimeoutRef.current = setTimeout(() => {
+            setExportStatus(null);
+        }, 2000);
     };
 
-    const applyPreset = ( presetKey: string ) =>
-    {
-        const preset = SETTINGS_PRESETS.find( ( item ) => item.key === presetKey );
-        if ( !preset ) return;
-        setSettings( ( prev ) => ( { ...prev, ...preset.settings } ) );
+    const applyPreset = (presetKey: string) => {
+        const preset = SETTINGS_PRESETS.find((item) => item.key === presetKey);
+        if (!preset) return;
+        setSettings((prev) => ({ ...prev, ...preset.settings }));
     };
 
     const DEMO_OPTIONS: GroupedSelectOption[] = [
@@ -299,12 +293,134 @@ export default function GitVisualizerPage()
         { key: "resetting", label: "Reset" },
     ];
 
-    const handleCommand = async ( command: string ): Promise<TerminalOutput> =>
-    {
-        // Parse the command
-        const parsed = parseGitCommand( command );
+    const runGitCommand = async (
+        command: string,
+        mirrorToTerminal = false,
+    ): Promise<TerminalOutput> => {
+        const trimmedInput = command.trim();
+        const baseCmd = trimmedInput.split(" ")[0]?.toLowerCase() ?? "";
 
-        if ( "error" in parsed && parsed.error ) {
+        // Parse the command
+        if ( command.trim().toLowerCase() === "clear" ) {
+            terminalRef.current?.clearHistory?.();
+            const output: TerminalOutput = {
+                type: "info",
+                text: "Terminal cleared",
+                timestamp: Date.now(),
+            };
+            if ( mirrorToTerminal ) {
+                terminalRef.current?.addOutput?.( output );
+            }
+            return output;
+        }
+
+        // 1. Route 'touch' Command
+        if (baseCmd === "touch") {
+            const filename = trimmedInput.substring(6).trim();
+            if (!filename) {
+                return {
+                    type: "error",
+                    text: "touch requires a filename",
+                    timestamp: Date.now(),
+                };
+            }
+
+            const result = executeCommand(
+                {
+                    type: "touch",
+                    paths: [filename],
+                    rawInput: command,
+                },
+                gitState,
+                {
+                    allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
+                },
+            );
+
+            if (!result.success) {
+                return {
+                    type: "error",
+                    text: result.message,
+                    timestamp: Date.now(),
+                };
+            }
+
+            if (result.newState) {
+                setGitState(result.newState);
+            }
+
+            return {
+                type: "success",
+                text: `Created ${filename}`,
+                timestamp: Date.now(),
+            };
+        }
+
+        // 2. Route 'echo' Command
+        if (baseCmd === "echo") {
+            const echoRegex = /^echo\s+(?:["']([^"']+)["']|([^>]+?))\s*(>>?)\s*([^\s]+)$/;
+            const match = trimmedInput.match(echoRegex);
+
+            if (!match) {
+                return {
+                    type: "error",
+                    text: 'Invalid format. Use: echo "text" > filename.txt',
+                    timestamp: Date.now(),
+                };
+            }
+
+            const content = (match[1] || match[2]).trim();
+            const append = match[3] === ">>";
+            const filename = match[4].trim();
+            const existingContent =
+                gitState.tree.workingDirectory.find((file) => file.path === filename)
+                    ?.content ?? "";
+
+            const result = executeCommand(
+                {
+                    type: "echo",
+                    paths: [filename],
+                    echoContent: content,
+                    echoTarget: filename,
+                    echoAppend: append,
+                    rawInput: command,
+                },
+                gitState,
+                {
+                    allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
+                },
+            );
+
+            if (!result.success) {
+                return {
+                    type: "error",
+                    text: result.message,
+                    timestamp: Date.now(),
+                };
+            }
+
+            if (result.newState) {
+                if (append && result.newState.tree.workingDirectory.length > 0) {
+                    result.newState.tree.workingDirectory = result.newState.tree.workingDirectory.map((file) =>
+                        file.path === filename
+                            ? { ...file, content: `${existingContent}${content}` }
+                            : file,
+                    );
+                }
+                setGitState(result.newState);
+            }
+
+            // Echo with redirection is usually silent in bash.
+            return {
+                type: "success",
+                text: "",
+                timestamp: Date.now(),
+            };
+        }
+
+        const parsed = parseGitCommand(command);
+
+        if ("error" in parsed && parsed.error) {
             return {
                 type: "error",
                 text: parsed.message,
@@ -314,210 +430,234 @@ export default function GitVisualizerPage()
 
         // Execute the command
         // @ts-ignore
-        const result = executeCommand( parsed, gitState, {
+        const result = executeCommand(parsed, gitState, {
             allowFastForwardMerges: settings.ALLOW_FAST_FORWARD_MERGES,
-        } );
+        });
 
-        if ( !result.success ) {
-            return {
+        if (!result.success) {
+            const output: TerminalOutput = {
                 type: "error",
                 text: result.message,
                 timestamp: Date.now(),
             };
+            if (mirrorToTerminal) {
+                terminalRef.current?.addOutput?.(output);
+            }
+            return output;
         }
 
         // Update git state if command succeeded
-        if ( result.newState ) {
-            setGitState( result.newState );
+        if (result.newState) {
+            setGitState(result.newState);
         }
 
-        return {
+        const output: TerminalOutput = {
             type: "success",
             text: result.message,
             timestamp: Date.now(),
         };
+        if (mirrorToTerminal) {
+            terminalRef.current?.addOutput?.(output);
+        }
+        return output;
     };
 
-    useEffect( () =>
-    {
+    const handleCommand = async (command: string): Promise<TerminalOutput> => {
+        return runGitCommand(command, false);
+    };
+
+    useEffect(() => {
         demoModeRef.current = demoMode;
-    }, [demoMode] );
+    }, [demoMode]);
 
-    const waitForSpace = (): Promise<void> =>
-    {
-        return new Promise( ( resolve ) =>
-        {
+    const waitForSpace = (): Promise<void> => {
+        return new Promise((resolve) => {
             spaceResolveRef.current = resolve;
-        } );
+        });
     };
 
-    useEffect( () =>
-    {
-        if ( !demoMode || !settings.DEMO_STEP_ON_SPACE ) {
+    useEffect(() => {
+        if (!demoMode || !settings.DEMO_STEP_ON_SPACE) {
             spaceResolveRef.current = null;
             return;
         }
 
-        const handleKeyDown = ( event: KeyboardEvent ) =>
-        {
-            if ( event.code === "Space" || event.key === " " ) {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.code === "Space" || event.key === " ") {
                 event.preventDefault();
                 const resolver = spaceResolveRef.current;
-                if ( resolver ) {
+                if (resolver) {
                     spaceResolveRef.current = null;
                     resolver();
                 }
             }
         };
 
-        window.addEventListener( "keydown", handleKeyDown );
-        return () => window.removeEventListener( "keydown", handleKeyDown );
-    }, [demoMode, settings.DEMO_STEP_ON_SPACE] );
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [demoMode, settings.DEMO_STEP_ON_SPACE]);
 
     // Type out a command character by character
-    const typeCommand = async ( command: string ): Promise<void> =>
-    {
-        return new Promise( ( resolve ) =>
-        {
+    const typeCommand = async (command: string): Promise<void> => {
+        return new Promise((resolve) => {
             let index = 0;
-            const typeInterval = setInterval( () =>
-            {
-                if ( index <= command.length ) {
-                    terminalRef.current?.setInput?.( command.substring( 0, index ) );
+            const typeInterval = setInterval(() => {
+                if (index <= command.length) {
+                    terminalRef.current?.setInput?.(command.substring(0, index));
                     index++;
                 } else {
-                    clearInterval( typeInterval );
+                    clearInterval(typeInterval);
                     resolve();
                 }
-            }, graphConfig.TYPING_DELAY );
-        } );
+            }, graphConfig.TYPING_DELAY);
+        });
     };
 
     // Execute demo sequence
     const runDemoCommand = async (
         commandIndex: number,
         demoCommands: string[],
-    ) =>
-    {
-        if ( !demoCommands || commandIndex >= demoCommands.length ) {
-            setDemoMode( false );
+    ) => {
+        if (!demoCommands || commandIndex >= demoCommands.length) {
+            setDemoMode(false);
             return;
         }
 
         // Apply initial delay before first command
-        if ( commandIndex === 0 && settings.INITIAL_DEMO_DELAY > 0 ) {
-            await new Promise( ( resolve ) =>
-                setTimeout( resolve, settings.INITIAL_DEMO_DELAY ),
+        if (commandIndex === 0 && settings.INITIAL_DEMO_DELAY > 0) {
+            await new Promise((resolve) =>
+                setTimeout(resolve, settings.INITIAL_DEMO_DELAY),
             );
         }
 
         const command = demoCommands[commandIndex];
 
-        if ( settings.DEMO_STEP_ON_SPACE ) {
+        if (settings.DEMO_STEP_ON_SPACE) {
             // First space: type the command
             await waitForSpace();
-            if ( !demoModeRef.current ) return;
+            if (!demoModeRef.current) return;
         }
 
         // Type the command
-        await typeCommand( command );
+        await typeCommand(command);
 
-        if ( settings.DEMO_STEP_ON_SPACE ) {
+        if (settings.DEMO_STEP_ON_SPACE) {
             // Second space: execute the command
             await waitForSpace();
-            if ( !demoModeRef.current ) return;
+            if (!demoModeRef.current) return;
         } else {
             // Wait before executing
-            await new Promise( ( resolve ) =>
-                setTimeout( resolve, graphConfig.COMMAND_DELAY ),
+            await new Promise((resolve) =>
+                setTimeout(resolve, graphConfig.COMMAND_DELAY),
             );
-            if ( !demoModeRef.current ) return;
+            if (!demoModeRef.current) return;
         }
 
         // Execute the command
         terminalRef.current?.executeCurrentInput?.();
 
         // Wait before next command
-        demoTimeoutRef.current = setTimeout( () =>
-        {
-            setDemoIndex( commandIndex + 1 );
-        }, graphConfig.ACTION_ANIMATION_DELAY );
+        demoTimeoutRef.current = setTimeout(() => {
+            setDemoIndex(commandIndex + 1);
+        }, graphConfig.ACTION_ANIMATION_DELAY);
     };
 
     // Handle demo mode
-    useEffect( () =>
-    {
-        if ( demoMode && currentDemoCommands.length > 0 ) {
-            runDemoCommand( demoIndex, currentDemoCommands );
+    useEffect(() => {
+        if (demoMode && currentDemoCommands.length > 0) {
+            runDemoCommand(demoIndex, currentDemoCommands);
         }
 
-        return () =>
-        {
-            if ( demoTimeoutRef.current ) {
-                clearTimeout( demoTimeoutRef.current );
+        return () => {
+            if (demoTimeoutRef.current) {
+                clearTimeout(demoTimeoutRef.current);
             }
         };
-    }, [demoMode, demoIndex, selectedDemo] );
+    }, [demoMode, demoIndex, selectedDemo]);
 
-    useEffect( () =>
-    {
-        const stored = localStorage.getItem( SETTINGS_STORAGE_KEY );
-        if ( !stored ) return;
+    useEffect(() => {
+        const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (!stored) return;
 
         try {
-            const parsed = JSON.parse( stored ) as Partial<GraphSettings>;
+            const parsed = JSON.parse(stored) as Partial<GraphSettings>;
             // Reset to default: ALLOW_FAST_FORWARD_MERGES should be false by default
             // This migrates old settings that may have had it set to true
-            setSettings( ( prev ) => ( {
+            setSettings((prev) => ({
                 ...prev,
                 ...parsed,
                 ALLOW_FAST_FORWARD_MERGES: false,
-            } ) );
+            }));
         } catch {
             // Ignore invalid stored settings
         }
-    }, [] );
+    }, []);
 
-    useEffect( () =>
-    {
-        localStorage.setItem( SETTINGS_STORAGE_KEY, JSON.stringify( settings ) );
-    }, [settings] );
+    useEffect(() => {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    }, [settings]);
 
-    const startDemo = () =>
-    {
+    const startDemo = () => {
         const currentDemoCommands = DEMOS[selectedDemo as DemoType] || [];
-        if ( !currentDemoCommands || currentDemoCommands.length === 0 ) return;
+        if (!currentDemoCommands || currentDemoCommands.length === 0) return;
         // Don't reset state - just start playing commands
-        setDemoIndex( 0 );
-        setDemoMode( true );
+        setDemoIndex(0);
+        setDemoMode(true);
     };
 
-    const stopDemo = () =>
-    {
-        setDemoMode( false );
-        if ( demoTimeoutRef.current ) {
-            clearTimeout( demoTimeoutRef.current );
+    const stopDemo = () => {
+        setDemoMode(false);
+        if (demoTimeoutRef.current) {
+            clearTimeout(demoTimeoutRef.current);
         }
     };
 
-    const resetGit = () =>
-    {
+    const resetGit = () => {
         stopDemo();
-        setGitState( createEmptyGitState() );
-        setDemoIndex( 0 );
-        setSelectedCommitId( null );
+        setGitState(createEmptyGitState());
+        setDemoIndex(0);
+        setSelectedCommitId(null);
         terminalRef.current?.clearHistory?.();
     };
 
-    const toggleLayout = () =>
-    {
-        setIsStacked( ( prev ) => !prev );
+    const toggleLayout = () => {
+        setIsStacked((prev) => !prev);
     };
 
-    const toggleFullscreen = () =>
-    {
-        setIsFullscreen( ( prev ) => !prev );
+    const toggleFullscreen = () => {
+        setIsFullscreen((prev) => !prev);
     };
+
+    const createSampleFile = () => void runGitCommand(
+        `touch ${sampleFilePath}`,
+        true,
+    );
+
+    const editSampleFile = () => void runGitCommand(
+        `edit ${sampleFilePath}`,
+        true,
+    );
+
+    const stageAllFiles = () => void runGitCommand("git add .", true);
+
+    const commitStagedFiles = () => void runGitCommand(
+        "git commit -m 'Snapshot commit'",
+        true,
+    );
+
+    const stashFiles = () => void runGitCommand("git stash", true);
+
+    const popStash = () => void runGitCommand("git stash pop", true);
+
+    const restoreStaged = () => void runGitCommand(
+        `git restore --staged ${sampleFilePath}`,
+        true,
+    );
+
+    const discardChanges = () => void runGitCommand(
+        `git restore ${sampleFilePath}`,
+        true,
+    );
 
 
     return (
@@ -527,22 +667,21 @@ export default function GitVisualizerPage()
                 <div className="flex flex-row flex-wrap gap-4 items-center">
                     <h1 className="text-2xl font-bold">Git Visualizer By ZeqTech</h1>
                     <div className="flex flex-col">
-                    <a href="https://www.youtube.com/@ZeqTech" target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-400 hover:underline">Visit ZeqTech on YouTube</a>
+                        <a href="https://www.youtube.com/@ZeqTech" target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-400 hover:underline">Visit ZeqTech on YouTube</a>
                         <a href="https://www.youtube.com/watch?v=x0nLbmVImag&t=140s" target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 hover:underline">Watch Merge Explanation Video</a></div>
                 </div>
                 <div className="flex gap-2 items-center">
                     <GroupedSelect
                         value={selectedDemo}
-                        onChange={( value ) =>
-                        {
-                            setSelectedDemo( value );
+                        onChange={(value) => {
+                            setSelectedDemo(value);
                             stopDemo();
                             resetGit();
                         }}
                         options={DEMO_OPTIONS}
                         className="min-w-[220px]"
                     />
-                    {( DEMOS[selectedDemo as DemoType]?.length ?? 0 ) > 0 && (
+                    {(DEMOS[selectedDemo as DemoType]?.length ?? 0) > 0 && (
                         // biome-ignore lint/complexity/noUselessFragments: <explanation>
                         <>
                             {!demoMode ? (
@@ -591,55 +730,174 @@ export default function GitVisualizerPage()
 
             {/* Main Content */}
             <div
-                className={`flex flex-1 w-full h-full overflow-auto ${ isStacked ? "flex-col-reverse" : "flex-row" }`}
+                className={`flex flex-1 w-full h-full overflow-auto ${isStacked ? "flex-col-reverse" : "flex-row"}`}
             >
                 {/* Left Panel - Terminal */}
                 <div
                     className={cn(
-                        `${ isStacked ? "w-full border-t max-h-[50%]" : "w-1/2 border-r" } border-slate-700 p-4 flex flex-col flex-1`,
+                        `${isStacked ? "w-full border-t max-h-[50%]" : "w-1/2 border-r"} border-slate-700 p-4 flex flex-col flex-1`,
                     )}
                 >
                     <TerminalComponent
                         ref={terminalRef}
                         onCommand={handleCommand}
                         placeholder="git commit -m 'your message'"
-                        helpText="Try: git commit -m 'msg' | git branch | git checkout -b name | git switch -c name | git merge [--squash] name | git branch -d/-D name"
+                        helpText="Try: touch file.txt | edit file.txt | git add . | git commit -m 'msg' | git stash | git stash pop | git restore --staged file.txt | git restore file.txt"
                         fontSize={settings.TERMINAL_FONT_SIZE}
                         refocusOnEnter={!settings.DEMO_STEP_ON_SPACE}
                     />
                 </div>
 
-                {/* Right Panel - Split between Graph and Details */}
+                {/* Right Panel - Tabbed Content */}
                 <div
                     className={cn(
-                        `${ isStacked ? "w-full max-h-[50%]" : "w-1/2" } flex flex-col p-4 gap-4 flex-1`,
+                        `${isStacked ? "w-full max-h-[50%]" : "w-1/2"} flex flex-col p-4 gap-4 flex-1 min-h-0`,
                     )}
                 >
-                    {/* Git Graph */}
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setActiveView("graph")}
+                                className={cn(
+                                    "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                                    activeView === "graph"
+                                        ? "bg-indigo-600 text-white"
+                                        : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white",
+                                )}
+                            >
+                                Git Graph
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveView("architecture")}
+                                className={cn(
+                                    "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                                    activeView === "architecture"
+                                        ? "bg-indigo-600 text-white"
+                                        : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white",
+                                )}
+                            >
+                                Internal Architecture
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                            {activeView === "graph"
+                                ? "Commit tree and branches"
+                                : "Working / Index / Repo / Stash"}
+                        </p>
+                    </div>
+
                     <div className="flex-1 min-h-0">
-                        <GitGraphComponent
-                            gitState={gitState}
-                            onCommitClick={setSelectedCommitId}
-                            config={graphConfig}
-                            demoProgress={demoProgress}
-                            reserveRightColumn={true}
-                            followMainHead={true}
-                        />
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeView}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.18, ease: "easeOut" }}
+                                className="h-full min-h-0"
+                            >
+                                {activeView === "graph" ? (
+                                    <GitGraphComponent
+                                        gitState={gitState}
+                                        onCommitClick={setSelectedCommitId}
+                                        config={graphConfig}
+                                        demoProgress={demoProgress}
+                                        reserveRightColumn={true}
+                                        followMainHead={true}
+                                    />
+                                ) : (
+                                    <GitZonesBoard
+                                        tree={gitState.tree}
+                                        onCreateFile={createSampleFile}
+                                        onEditFile={editSampleFile}
+                                        onStageFiles={stageAllFiles}
+                                        onCommitFiles={commitStagedFiles}
+                                        onStashFiles={stashFiles}
+                                        onPopStash={popStash}
+                                        onRestoreStaged={restoreStaged}
+                                        onDiscardChanges={discardChanges}
+                                    />
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>
 
             {/* Fullscreen Overlay */}
             {isFullscreen && (
-                <div className="fixed inset-0 top-18.25  z-50 flex flex-col p-2 ">
-                    <GitGraphComponent
-                        gitState={gitState}
-                        onCommitClick={setSelectedCommitId}
-                        config={graphConfig}
-                        demoProgress={demoProgress}
-                        reserveRightColumn={true}
-                        followMainHead={true}
-                    />
+                <div className="fixed inset-0 top-18.25 z-50 flex flex-col gap-2 bg-slate-950 p-2">
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setActiveView("graph")}
+                                className={cn(
+                                    "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                                    activeView === "graph"
+                                        ? "bg-indigo-600 text-white"
+                                        : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white",
+                                )}
+                            >
+                                Git Graph
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveView("architecture")}
+                                className={cn(
+                                    "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                                    activeView === "architecture"
+                                        ? "bg-indigo-600 text-white"
+                                        : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white",
+                                )}
+                            >
+                                Internal Architecture
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                            {activeView === "graph"
+                                ? "Commit tree and branches"
+                                : "Working / Index / Repo / Stash"}
+                        </p>
+                    </div>
+
+                    <div className="flex-1 min-h-0">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={`fullscreen-${activeView}`}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.18, ease: "easeOut" }}
+                                className="h-full min-h-0"
+                            >
+                                {activeView === "graph" ? (
+                                    <GitGraphComponent
+                                        gitState={gitState}
+                                        onCommitClick={setSelectedCommitId}
+                                        config={graphConfig}
+                                        demoProgress={demoProgress}
+                                        reserveRightColumn={true}
+                                        followMainHead={true}
+                                    />
+                                ) : (
+                                    <GitZonesBoard
+                                        tree={gitState.tree}
+                                        onCreateFile={createSampleFile}
+                                        onEditFile={editSampleFile}
+                                        onStageFiles={stageAllFiles}
+                                        onCommitFiles={commitStagedFiles}
+                                        onStashFiles={stashFiles}
+                                        onPopStash={popStash}
+                                        onRestoreStaged={restoreStaged}
+                                        onDiscardChanges={discardChanges}
+                                    />
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 </div>
             )}
 
@@ -664,15 +922,15 @@ export default function GitVisualizerPage()
                             <div className="mb-6">
                                 <p className="text-sm text-slate-300 mb-2">Presets</p>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {SETTINGS_PRESETS.map( ( preset ) => (
+                                    {SETTINGS_PRESETS.map((preset) => (
                                         <button
                                             key={preset.key}
-                                            onClick={() => applyPreset( preset.key )}
+                                            onClick={() => applyPreset(preset.key)}
                                             className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm font-medium transition-colors"
                                         >
                                             {preset.label}
                                         </button>
-                                    ) )}
+                                    ))}
                                 </div>
                                 <div className="mt-3 flex items-center gap-2">
                                     <button
@@ -689,13 +947,12 @@ export default function GitVisualizerPage()
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                {sliderSettings.map( ( item ) =>
-                                {
+                                {sliderSettings.map((item) => {
                                     const value =
-                                        ( settings[item.key as keyof GraphSettings] as number ) ??
-                                        ( defaultSettings[
+                                        (settings[item.key as keyof GraphSettings] as number) ??
+                                        (defaultSettings[
                                             item.key as keyof GraphSettings
-                                        ] as number );
+                                        ] as number);
                                     return (
                                         <div key={item.key}>
                                             <div className="flex items-center justify-between text-sm mb-1">
@@ -708,7 +965,7 @@ export default function GitVisualizerPage()
                                                 max={item.max}
                                                 step={item.step}
                                                 value={value}
-                                                onChange={( e ) =>
+                                                onChange={(e) =>
                                                     updateSetting(
                                                         item.key as keyof GraphSettings,
                                                         Number(
@@ -720,7 +977,7 @@ export default function GitVisualizerPage()
                                             />
                                         </div>
                                     );
-                                } )}
+                                })}
                             </div>
 
                             <div className="mt-6 space-y-3">
@@ -747,8 +1004,8 @@ export default function GitVisualizerPage()
                                     <input
                                         type="checkbox"
                                         checked={settings.INVERT_CUBIC_CURVES}
-                                        onChange={( e ) =>
-                                            updateSetting( "INVERT_CUBIC_CURVES", e.target.checked )
+                                        onChange={(e) =>
+                                            updateSetting("INVERT_CUBIC_CURVES", e.target.checked)
                                         }
                                     />
                                 </label>
@@ -757,8 +1014,8 @@ export default function GitVisualizerPage()
                                     <input
                                         type="checkbox"
                                         checked={settings.DEMO_STEP_ON_SPACE}
-                                        onChange={( e ) =>
-                                            updateSetting( "DEMO_STEP_ON_SPACE", e.target.checked )
+                                        onChange={(e) =>
+                                            updateSetting("DEMO_STEP_ON_SPACE", e.target.checked)
                                         }
                                     />
                                 </label>
@@ -767,8 +1024,8 @@ export default function GitVisualizerPage()
                                     <input
                                         type="checkbox"
                                         checked={settings.SHOW_TEXT_LABELS}
-                                        onChange={( e ) =>
-                                            updateSetting( "SHOW_TEXT_LABELS", e.target.checked )
+                                        onChange={(e) =>
+                                            updateSetting("SHOW_TEXT_LABELS", e.target.checked)
                                         }
                                     />
                                 </label>
@@ -777,8 +1034,8 @@ export default function GitVisualizerPage()
                                     <input
                                         type="checkbox"
                                         checked={settings.SHOW_MERGE_TYPE_LABELS}
-                                        onChange={( e ) =>
-                                            updateSetting( "SHOW_MERGE_TYPE_LABELS", e.target.checked )
+                                        onChange={(e) =>
+                                            updateSetting("SHOW_MERGE_TYPE_LABELS", e.target.checked)
                                         }
                                     />
                                 </label>
@@ -789,7 +1046,7 @@ export default function GitVisualizerPage()
                                     <input
                                         type="checkbox"
                                         checked={settings.ALLOW_FAST_FORWARD_MERGES}
-                                        onChange={( e ) =>
+                                        onChange={(e) =>
                                             updateSetting(
                                                 "ALLOW_FAST_FORWARD_MERGES",
                                                 e.target.checked,

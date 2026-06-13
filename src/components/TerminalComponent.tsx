@@ -95,15 +95,18 @@ export const TerminalComponent = React.forwardRef<
         ]);
       } finally {
         setIsLoading(false);
-        if ( refocusOnEnter ) {
-          requestAnimationFrame( () => inputRef.current?.focus() );
+        if (refocusOnEnter) {
+          requestAnimationFrame(() => inputRef.current?.focus());
         }
       }
     };
 
     const implementedGitFeatures = [
+      "touch <path>, edit <path>, delete <path>",
       "git add <path>",
       "git commit -m 'msg'",
+      "git stash, git stash pop, git stash apply",
+      "git restore --staged <path>, git restore <path>",
       "git branch, git branch <name>, git branch -d|-D <name>",
       "git checkout <branch>, git checkout -b <branch>",
       "git switch <branch>, git switch -c <branch>",
@@ -187,7 +190,7 @@ export const TerminalComponent = React.forwardRef<
               <div
                 // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
                 key={idx}
-                className={`${ getOutputClasses( output.type ) } whitespace-pre-wrap`}
+                className={`${getOutputClasses(output.type)} whitespace-pre-wrap`}
                 style={{ fontSize }}
               >
                 {output.text}
@@ -225,7 +228,7 @@ export const TerminalComponent = React.forwardRef<
                 aria-label="Implemented git features"
                 title="Implemented git features"
                 className="w-8 h-8 rounded border border-slate-600 bg-slate-700 text-slate-300 hover:text-white hover:border-slate-500 transition-colors font-semibold"
-                style={{ fontSize: Math.max( 12, fontSize - 1 ) }}
+                style={{ fontSize: Math.max(12, fontSize - 1) }}
               >
                 i
               </button>
@@ -234,9 +237,9 @@ export const TerminalComponent = React.forwardRef<
                   Implemented git features
                 </p>
                 <ul className="text-xs text-slate-300 space-y-1 list-disc pl-4">
-                  {implementedGitFeatures.map( ( feature ) => (
+                  {implementedGitFeatures.map((feature) => (
                     <li key={feature}>{feature}</li>
-                  ) )}
+                  ))}
                 </ul>
                 <p className="mt-2 text-xs font-semibold text-slate-200 mb-2 italic">Note: These might not be perfect but I tried to get them to represent the actual git features as accurately as possible.</p>
               </div>

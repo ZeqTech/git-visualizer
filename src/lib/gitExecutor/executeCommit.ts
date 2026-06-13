@@ -1,5 +1,6 @@
 import type { ParsedCommand } from "../gitParser";
 import { generateCommitId, type Commit, type GitState } from "../gitState";
+import { commitIndexFiles } from "../gitTreeState";
 import { deepCloneGitState } from "./deepCloneGitState";
 import type { ExecutionResult } from "./types";
 
@@ -51,6 +52,7 @@ export function executeCommit(
   // Update state
   const newState = deepCloneGitState(state);
   newState.commits.set(newCommitId, newCommit);
+  newState.tree = commitIndexFiles(newState.tree, newCommitId, message);
 
   // If there was a pending squash merge on the current branch and we're committing to the current branch
   // consume it (clear the pending squash but don't treat this commit as a merge commit)
