@@ -16,9 +16,12 @@ import { executeMerge } from "./gitExecutor/executeMerge";
 import { executePull } from "./gitExecutor/executePull";
 import { executeRebase } from "./gitExecutor/executeRebase";
 import { executeReset } from "./gitExecutor/executeReset";
+import { executeRestore } from "./gitExecutor/executeRestore";
+import { executeStash } from "./gitExecutor/executeStash";
 import { executeSquash } from "./gitExecutor/executeSquash";
 import { executeStatus } from "./gitExecutor/executeStatus";
 import { executeTag } from "./gitExecutor/executeTag";
+import { executeWorkflowChange } from "./gitExecutor/executeWorkflowChange";
 import type { ExecutionResult } from "./gitExecutor/types";
 
 export type { ExecutionResult } from "./gitExecutor/types";
@@ -54,6 +57,15 @@ export function executeCommand(
         return executeCommit(command, currentState);
       case "add":
         return executeAdd(command, currentState);
+      case "stash":
+        return executeStash(command, currentState);
+      case "restore":
+        return executeRestore(command, currentState);
+      case "touch":
+      case "edit":
+      case "delete":
+      case "echo":
+        return executeWorkflowChange(command, currentState);
       case "branch":
         return executeBranch(command, currentState);
       case "branch-delete":

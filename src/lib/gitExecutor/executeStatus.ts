@@ -14,6 +14,9 @@ export function executeStatus(state: GitState): ExecutionResult {
   }
   status += `Total commits: ${state.commits.size}\n`;
   status += `Total branches: ${state.branches.size}`;
+  status += `\nWorking files: ${state.tree.workingDirectory.length}`;
+  status += `\nStaged files: ${state.tree.index.length}`;
+  status += `\nStash entries: ${state.tree.stashEntries.length}`;
 
   return {
     success: true,

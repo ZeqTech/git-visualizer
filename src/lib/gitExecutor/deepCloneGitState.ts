@@ -1,4 +1,5 @@
 import type { GitState } from "../gitState";
+import { cloneGitTreeState } from "../gitTreeState";
 
 /**
  * Deep clone the entire GitState to avoid mutations
@@ -17,5 +18,9 @@ export function deepCloneGitState(state: GitState): GitState {
     ),
     currentBranch: state.currentBranch,
     HEAD: state.HEAD,
+    pendingSquash: state.pendingSquash
+      ? { ...state.pendingSquash }
+      : state.pendingSquash,
+    tree: cloneGitTreeState(state.tree),
   };
 }

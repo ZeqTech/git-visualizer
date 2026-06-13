@@ -16,6 +16,29 @@ export function validateCommand(
       }
       return { valid: true };
 
+    case "touch":
+    case "edit":
+    case "delete":
+    case "echo":
+      if (!command.paths || command.paths.length === 0) {
+        return { valid: false, reason: `Path required for ${command.type}` };
+      }
+      return { valid: true };
+
+    case "stash":
+      return { valid: true };
+
+    case "restore":
+      if (!command.paths || command.paths.length === 0) {
+        return {
+          valid: false,
+          reason: command.restoreStaged
+            ? "Path required for git restore --staged"
+            : "Path required for git restore",
+        };
+      }
+      return { valid: true };
+
     case "checkout":
     case "switch": {
       if (!command.branchName) {

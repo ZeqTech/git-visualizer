@@ -3,6 +3,11 @@
  * Defines the data structures and types for representing git repository state
  */
 
+import {
+  type GitTreeState,
+  createEmptyGitTreeState,
+} from "./gitTreeState";
+
 /**
  * Represents a single commit in the git repository
  */
@@ -55,6 +60,7 @@ export interface GitState {
   currentBranch: string; // Name of currently checked out branch
   HEAD: string; // Current commit id
   pendingSquash?: PendingSquash | null;
+  tree: GitTreeState;
 }
 
 /**
@@ -106,6 +112,17 @@ export function createInitialGitState(): GitState {
     currentBranch: "main",
     HEAD: initialCommitId,
     pendingSquash: null,
+    tree: {
+      ...createEmptyGitTreeState(),
+      repoCommits: [
+        {
+          id: initialCommitId,
+          message: "Initial commit",
+          timestamp: initialCommit.timestamp,
+          files: [],
+        },
+      ],
+    },
   };
 }
 
@@ -127,6 +144,7 @@ export function createEmptyGitState(): GitState {
     currentBranch: "main",
     HEAD: "", // No HEAD until first commit
     pendingSquash: null,
+    tree: createEmptyGitTreeState(),
   };
 }
 
